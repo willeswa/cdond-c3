@@ -224,22 +224,39 @@ jobs:
           workflow_id: ${CIRCLE_WORKFLOW_ID}  
       - revert-migrations
 
-  # run-migrations:
-  #   docker:
-  #     # Docker image here that supports NodeJS
-  #   steps:
-  #     # Checkout code from git
-  #     - run:
-  #         name: Run migrations
-  #         command: |
-  #           # Your code here
-  #           exit 1
-  #     - run:
-  #         name: Send migration results to memstash
-  #         command: |
-  #           # Your code here
-  #           exit 1
-  #    # Here's where you will add some code to rollback on failure      
+  run-migrations:
+    <<: *node_image
+    steps:
+      # Checkout code from git
+      - checkout
+      - run:
+          name: Install dependencies
+          command: |
+            sudo apt install -y tar gzip curl
+            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+            unzip -qq awscliv2.zip
+            sudo ./aws/install
+      - restore_cache:
+          keys: [backend-build]
+      - run:
+          name: Run migrations
+          command: |
+            # Your code here
+            cd backend/src
+            npm run migrations >> migrations.txt
+            cat migrations.txt
+      - run:
+          name: Send migration results to kvdb
+          command: |
+            # Your code here
+            if grep -q "SELECT" ~/project/backend/src/migrations.txt
+            then
+              curl --insecure https://kvdb.io/${KVDB_BUCKET_ID}/migration_${CIRCLE_WORKFLOW_ID} -d 'success'
+            fi
+     # Here's where you will add some code to rollback on failure      
+      - destroy-environment:
+          workflow_id: ${CIRCLE_WORKFLOW_ID}
+      - revert-migrations
 
   # deploy-frontend:
   #   docker:
@@ -355,11 +372,11 @@ workflows:
           requires: [test-frontend, test-backend, scan-frontend, scan-backend]
           filters:
             branches:
-              only: [phase-five]
+              only: [phase-six]
       - configure-infrastructure:
           requires: [deploy-infrastructure]
-      # - run-migrations:
-      #     requires: [configure-infrastructure]
+      - run-migrations:
+          requires: [configure-infrastructure]
       # - deploy-frontend:
       #     requires: [run-migrations]
       # - deploy-backend:
