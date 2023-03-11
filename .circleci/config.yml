@@ -159,7 +159,7 @@ jobs:
           command: |
             aws cloudformation deploy \
               --template-file .circleci/files/backend.yml \
-              --tags project=monkinfra \
+              --tags project=${CIRCLE_WORKFLOW_ID} \
               --stack-name backend-${CIRCLE_WORKFLOW_ID} \
               --parameter-overrides ID=${CIRCLE_WORKFLOW_ID}  
           
@@ -168,15 +168,16 @@ jobs:
           command: |
             aws cloudformation deploy \
               --template-file .circleci/files/frontend.yml \
-              --tags project=monkinfra \
+              --tags project={CIRCLE_WORKFLOW_ID} \
               --stack-name frontend-${CIRCLE_WORKFLOW_ID} \
               --parameter-overrides ID=${CIRCLE_WORKFLOW_ID}  
       - run:
           name: Add back-end ip to ansible inventory
           command: |
             # Your code here
-            IPS=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=monkinfra" --query "Reservations[*].Instances[*].PublicIpAddress" --output text)
+            IPS=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID}" --query "Reservations[*].Instances[*].PublicIpAddress" --output text)
             echo "$IPS" >> ~/project/.circleci/ansible/inventory.txt
+            cat ~/project/.circleci/ansible/inventory.txt
       - run:
           name: Install tar nad gzip utilities
           command: |
@@ -206,7 +207,9 @@ jobs:
   #         command: |
   #           # Your code here
   #           exit 1
-  #     # Here's where you will add some code to rollback on failure      
+  #     # Here's where you will add some code to rollback on failure
+  #     - destroy-environment:
+  #         workflow_id: ${CIRCLE_WORKFLOW_ID}  
 
   # run-migrations:
   #   docker:
