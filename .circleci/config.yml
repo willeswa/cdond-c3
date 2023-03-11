@@ -24,6 +24,7 @@ commands:
             # Your code here
             aws cloudformation delete-stack --stack-name backend-<< parameters.workflow_id >>
             aws cloudformation delete-stack --stack-name frontend-<< parameters.workflow_id >>
+            aws s3 rb s3://udapeople-<< parameters.workflow_id >> --force
 
   # revert-migrations:
   #   description: Revert the last migration if successfully run in the current workflow.
@@ -176,6 +177,10 @@ jobs:
             # Your code here
             IPS=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=monkinfra" --query "Reservations[*].Instances[*].PublicIpAddress" --output text)
             echo "$IPS" >> ~/project/.circleci/ansible/inventory.txt
+      - run:
+          name: Install tar nad gzip utilities
+          command: |
+            yum install -y tar gzip
       - persist_to_workspace:
           root: ~/
           paths:
