@@ -385,20 +385,19 @@ jobs:
       - revert-migrations
 
   cloudfront-update:
-    <<: *aws_image
+    <<: *node_image
     steps:
       # Checkout code from git
       - checkout
-      - node/install:
-          node-version: '13.8.0'
       - run:
           name: Install dependencies
           command: |
             # your code here
-            yum -y install tar gzip
-            # Install nodejs on Fedora Core based on nodesource website instructions
-            curl -sL https://rpm.nodesource.com/setup_lts.x | bash -
-            yum -y install nodejs
+            sudo apt install -y tar gzip curl
+            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+            unzip -qq awscliv2.zip
+            sudo ./aws/install
+            
       - run:
           name: Update cloudfront distribution
           command: |
@@ -427,10 +426,8 @@ jobs:
               --no-paginate --output text)
               export STACKS=($aws cloudformation list-stacks --query "StackSummaries[*].StackName" \
               --stack-status-filter CREATE_COMPLETE --no-paginate --output text)
-              export STACKS=[] #put the list of stacks here
-        - run:
-            name: Remove old stacks and files
-            command: |
+              echo Old Workflow Id: "${OldWorkflowID}"
+              echo New Workflow Id: "${CIRCLE_WORKFLOW_ID}"
               if [[ "${STACKS[@]}" =~ "${OldWorkflowID}" ]]
               then
                 aws s3 rm "s3://udapeople-${OldWorkflowID}" --recursive
