@@ -1,0 +1,12 @@
+[Unit]
+Description=Employee Microservice Backend
+
+[Service]
+Environment=NODE_ENV=production
+ExecStart=/usr/local/bin/pm2 start /home/ubuntu/backend/dist/main.js --update-env 
+WorkingDirectory=/home/ubuntu/backend
+Restart=always
+User=ubuntu
+
+[Install]
+WantedBy=multi-user.target

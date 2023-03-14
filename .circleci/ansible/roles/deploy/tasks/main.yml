@@ -1,8 +1,10 @@
 ---
+
 - name: "create backend app directory"
   file:
     path: /home/ubuntu/backend
     state: directory
+
 - name: " unarchive backend"
   unarchive:
     src: artifact.tar.gz
@@ -13,20 +15,31 @@
   shell: |
     cd /home/ubuntu/backend
     npm i
-  
 
-- name: " run node app using pm2"
+# - name: "create systemd service for app"
+#   become: true
+#   copy:
+#     src: nodejs_backend.service
+#     dest: /etc/systemd/system/nodejs_backend.service
+
+# - name: "reload systemd daemon"
+#   become: true
+#   systemd:
+#     daemon_reload: yes
+
+# - name: "enable and start app service"
+#   become: true
+#   service:
+#     name: nodejs_backend
+#     enabled: yes
+#     state: started
+
+- name: start app 
+  become: true
   shell: |
-    cd /home/ubuntu/backend/dist
+    cd /home/ubuntu/backend
+    npm install
     pm2 stop default
-    pm2 start -f main.js
-  register: execute_node
-
-- name: " print message"
-  debug:
-    msg: "{{execute_node.stdout_lines}}"
-
-- name: " configure pm2 to start as service"
-  shell: |
-     sudo su -c "env PATH=$PATH:/usr/local/bin  pm2 startup systemd -u ubuntu --hp /home/ubuntu"
-     pm2 save
+    pm2 start npm -- start
+    cd dist
+    pm2 start main.js --update-env
