@@ -5,7 +5,6 @@ Parameters:
   WorkflowID:
     Description: Unique identifier.
     Type: String
-    Default: qklqvolxa5ce49u
 
 
 Resources:
@@ -39,3 +38,4 @@ Outputs:
     Description: URL for website hosted on S3
     Export:
       Name: WorkflowID
+      Value: !Sub ${WorkflowID}
